@@ -1,0 +1,10 @@
+
+/DiffusionTrack_cvpr
+/Code/__pycache__
+/Data
+/detected_boxes
+yolov8n.pt
+/uav-track
+rtdetr-x.pt
+rtdetr-l.pt
+/DiffMOT
