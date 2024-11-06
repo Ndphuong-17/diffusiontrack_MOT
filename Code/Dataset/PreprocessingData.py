@@ -3,6 +3,7 @@ import os
 import shutil
 import numpy as np
 import torch
+import cv2
 
 def mkdirs(d, replace = True):
     if not osp.exists(d):
@@ -152,7 +153,7 @@ def preprocessing_DanceTrack(seq_root, trainer):
             gt = gt[idx, :]
 
             seq_label_root = os.path.join(label_root, seq, 'img1')
-            mkdirs(seq_label_root)
+            mkdirs(seq_label_root, replace= False)
 
             for fid, tid, x, y, w, h, mark, cls, vis in gt:
                 frame_path = os.path.join(seq_root_tr, seq, 'img1', f"{int(fid):08d}.jpg")
@@ -178,6 +179,64 @@ def preprocessing_DanceTrack(seq_root, trainer):
 
                 with open(label_fpath, 'a') as f:
                     f.write(label_str)
+
+
+
+def preprocessing_crop_Obj(seq_root, trainer = ['train', "val", 'test']):
+
+    for type in trainer:
+        label_root = os.path.join(seq_root, 'reid_gt_t', type)
+        mkdirs(label_root, replace = False)
+
+        seq_root_tr = os.path.join(seq_root, type)
+        
+        seqs = [s for s in os.listdir(seq_root_tr) if not s.startswith('.') and "gt_t" not in s]
+
+        for seq in seqs:
+            print(seq)
+            seq_info_path = os.path.join(seq_root_tr, seq, 'seqinfo.ini')
+
+            if not os.path.exists(seq_info_path):
+                print(f"Warning: {seq_info_path} not found, skipping sequence '{seq}'.")
+                continue
+            
+            with open(seq_info_path) as f:
+                seq_info = f.read()
+
+            gt_txt = os.path.join(seq_root_tr, seq, 'gt', 'gt.txt')
+
+            if not os.path.exists(gt_txt):
+                print(f"Warning: {gt_txt} not found for sequence '{seq}', skipping.")
+                continue
+
+            gt = np.loadtxt(gt_txt, dtype=np.float64, delimiter=',')
+            idx = np.lexsort(gt.T[:2, :])  # sort by fid, tid
+            gt = gt[idx, :]
+
+            seq_label_root = os.path.join(label_root, seq, 'img1')
+            mkdirs(seq_label_root, replace = False)
+
+            for fid, tid, x, y, w, h, mark, cls, vis in gt:
+                frame_path = os.path.join(seq_root_tr, seq, 'img1', f"{int(fid):08d}.jpg")
+                if not os.path.exists(frame_path):
+                    print(f"Warning: {frame_path} does not exist.")
+                    continue
+
+                if mark == 0 or cls != 1:
+                    continue
+
+                org_img = cv2.imread(frame_path)
+                if org_img is None:
+                    print(f"Warning: Could not read image from {frame_path}")
+                    continue
+
+                # Define label file path and ensure the directory exists
+                label_fpath = os.path.join(seq_label_root, f"{int(tid):06d}/{int(fid):06d}.jpg")
+                os.makedirs(os.path.dirname(label_fpath), exist_ok=True)
+
+                # Crop the image and write to file
+                cv2.imwrite(label_fpath, org_img[int(y):int(y+h)+1, int(x):int(x+w)+1])
+
 
 
 
