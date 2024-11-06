@@ -8,3 +8,7 @@ yolov8n.pt
 rtdetr-x.pt
 rtdetr-l.pt
 /DiffMOT
+/Code/Dataset/__pycache__
+/Code/Detector/__pycache__
+/Code/Encoder/__pycache__
+/DiffMOT_Choi
